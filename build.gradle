@@ -1,0 +1,268 @@
+/*
+*
+* 环境准备：
+* 1. 配置环境变量：
+*   GRADLE_HOME=/Users/user/.gradle/wrapper/dists/gradle-4.1-all/bzyivzo6n839fup2jbap0tjew/gradle-4.1
+*   export PATH=$GRADLE_HOME/bin:$PATH
+* 2. 检查：
+*    gradle -v
+*
+* 主题：
+*   "Gradle构建基础"
+*   参考：https://www.w3cschool.cn/gradle/ms7n1hu2.html （Gradle教程）
+*
+* 目录：
+* 1. 定义一个任务
+* 2. 代码即脚本
+* 3. 任务依赖
+* 4. 延迟依赖
+* 5. 动态任务
+* 6. 任务操纵
+* 7. 短标记法
+* 8. 增加自定义属性
+* 9. 调用 Ant 任务
+* 10. 利用方法组织脚本逻辑.
+* 11. 定义默认任务
+* 12. Configure by DAG
+*
+* */
+
+
+// 1. 定义一个任务
+task hello{
+  doLast{
+    println 'Hello world!'
+  }
+}
+
+// 快速定义任务
+// TODO: 实际 "task {...} 也可以执行"
+task world << {
+  println 'Hello world! 这是任务的简单表达方式.'
+}
+
+/*
+* > gradle -q hello / gradle world -q
+    Hello world!
+* */
+
+// 2. 代码即脚本
+// 在 gradle 任务中采用 groovy
+task upper << {
+  String someString = 'mY_nAmE'
+  println "Original: " + someString
+  println "Upper case: " + someString.toUpperCase()
+}
+
+task count << {
+  4.times {print "$it "}
+}
+
+// 3. 任务依赖
+// 在两个任务之间指明依赖关系: 即"intro"依赖"hello"
+task intro(dependsOn: hello) << {
+  println "I`m Gradle."
+}
+
+// 4. 延迟依赖
+// 即："taskX" 是在 "taskY"之前定义的。这在多项目构建中非常有用。
+task taskX(dependsOn: 'taskY') << {
+  println "This is taskX."
+}
+
+task taskY << {
+  println "This is taskY."
+}
+
+// 5. 动态任务
+10.times { counter ->
+  task "task$counter" << {
+    println "I`m task number $counter"
+  }
+}
+
+/*
+* 结果：
+userdeMacBook-Pro:GradleProject user$ gradle task9 -q（正确）
+I`m task number 9
+*
+userdeMacBook-Pro:GradleProject user$ gradle task10 -q（错误）
+FAILURE: Build failed with an exception.
+*
+* 原因：
+* 实际创建了10个任务：
+* "task0"、"task1"....."task9"
+* 所以执行"task10"会报错"Task 'task10' not found in root project "
+*
+* */
+
+// 6. 任务操纵
+// 一旦任务被创建后，任务之间可以通过 API 进行相互访问
+// 通过 API 进行任务之间的通信 - 增加依赖
+task0.dependsOn task2,task9
+/*
+* userdeMacBook-Pro:GradleProject user$ gradle task0 -q
+I`m task number 2
+I`m task number 9
+I`m task number 0
+*
+* */
+
+// 通过 API 进行任务之间的通信 - 增加任务行为
+task trueJob << {
+  println "This is doing trueJob."
+}
+
+// doFirst 和 doLast 可以进行多次调用
+trueJob.doFirst {
+  println "This is doFirst3."
+}
+
+trueJob.doLast {
+  println "This is doLast."
+}
+
+//  "<<" 操作符 是 "doLast" 的简写方式.
+trueJob << {
+  println "This is << ."
+}
+
+/*
+userdeMacBook-Pro:GradleProject user$ gradle trueJob -q
+This is doFirst.
+This is doing trueJob.
+This is doLast.
+This is << .
+* 按照任务"doLast"、"<<"的先后定义顺序执行。
+*
+* */
+
+// 7. 短标记法
+// 以属性的方式访问任务.因为"每个任务都是一个脚本的属性"
+world.doLast {
+  println "Greetings from the $world.name task."
+}
+
+// 8. 增加自定义属性
+task myTask{
+  ext.myProperty = "myValue"
+}
+
+task printTaskProperties << {
+  println myTask.myProperty
+  String greeting = 'hello from ant.'
+  ant.echo(message: greeting) // 添加"-q"参数会无法打印结果："[ant:echo] hello from ant."
+}
+/*
+*userdeMacBook-Pro:GradleProject user$ gradle printTaskProperties -q
+ myValue
+* */
+
+// 9. 调用 Ant 任务( Groovy 对 Ant 任务进行了优秀的整合。Gradle 自带了一个 AntBuilder)
+task loadFile << {
+  def files = file("antLoadfileResources").listFiles().sort()
+  files.each { File file ->
+    if(file.isFile()){
+      ant.loadfile(srcFile: file, property: file.name)
+      println "**** $file.name ****"
+      println "${ant.properties[file.name]}"
+    }
+  }
+}
+/*
+userdeMacBook-Pro:GradleProject user$ gradle loadFile -q
+**** 1.txt ****
+this is "1.txt" content.
+**** 2.txt ****
+this is "2.txt" content.
+* */
+
+// 10. 利用方法组织脚本逻辑.
+// 比如，针对上面的例子，首先要做的就是要抽取方法
+
+task checkSum << {
+  fileList("antLoadfileResources").each {File file ->
+    ant.checksum(file: file, property: "cs_$file.name")
+    println "$file.name CheckSum: ${ant.properties["cs_$file.name"]}"
+  }
+}
+/*
+userdeMacBook-Pro:GradleProject user$ gradle checkSum -q
+1.txt CheckSum: 0ba2820bccb23a9357e9c1eb160b7065
+2.txt CheckSum: 84b1c4a4e2a1adaf8a6ec227032debc8
+* */
+
+task loadFileByMethodExtracted << {
+  fileList("antLoadfileResources").each {File file ->
+    ant.loadfile(srcFile: file, property: file.name)
+    println "I`m fond of $file.name"
+  }
+}
+
+// 抽象出的方法
+File[] fileList(String dir){
+//  file(dir).listFiles().sort() // 其实也可以用
+  file(dir).listFiles({file -> file.isFile()} as FileFilter).sort()
+}
+
+// 11. 定义默认任务
+defaultTasks 'clean', 'run'
+task clean << {
+  println "display in doule yinhao: $clean.name" // 双引号是弱引用，支持插值操作
+  println 'display in single yinhao: $clean.name' // 单引号是强引号，保留字面意思，插值操作无效
+  /*
+  * 单引号、双引号在gradle中的使用区别：
+  * display in doule yinhao: clean
+    display in single yinhao: $clean.name
+  * */
+  println "doing clean."
+}
+
+task run << {
+  println "doing run."
+}
+
+task other << {
+  println "I`m not a default task."
+}
+
+/*
+两种方式的执行结果相同：
+（"在多项目构建中，每个子项目都可以指定单独的默认任务。如果子项目未进行指定将会调用父项目指定的的默认任务。"）
+userdeMacBook-Pro:GradleProject user$ gradle clean run -q
+doing clean.
+doing run.
+userdeMacBook-Pro:GradleProject user$ gradle -q
+doing clean.
+doing run.
+* */
+
+// 12. Configure by DAG
+// 增加钩子。检查已经执行的任务中有没有被释放，借由此，你可以为一些变量赋予不同的值。
+task distribution << {
+  println "We build the zip with version=$version"
+}
+
+task release(dependsOn: 'distribution'){
+  println "We release now."
+}
+
+gradle.taskGraph.whenReady {taskGraph ->
+  if (taskGraph.hasTask(release)){
+    version = "1.0"
+  }else{
+    version = "1.0-SNAPSHOT"
+  }
+}
+
+/*
+* whenReady 会在已发布的任务之前影响到已发布任务的执行。
+* 即使已发布的任务不是主要任务(也就是说，即使这个任务不是通过命令行直接调用)
+userdeMacBook-Pro:GradleProject user$ gradle distribution -q
+We release now  // TODO:为何会执行此？实际未显示指定运行"release"任务
+We build the zip with version=1.0-SNAPSHOT
+userdeMacBook-Pro:GradleProject user$ gradle release -q
+We release now
+We build the zip with version=1.0
+*
+* */

@@ -1,0 +1,4 @@
+println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$buildFile.parentFile.name' [配置阶段]"
+
+// 为项目添加描述信息.
+description = 'The shared API for the application'

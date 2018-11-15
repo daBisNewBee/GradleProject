@@ -1,0 +1,10 @@
+println 'settings.gradle ------- start'
+println '这里将执行在[初始化阶段(Initialization)].....'
+println 'settings.gradle ------- end'
+
+// 单项目构建时，该文件可选；多项目构建时，该文件必选
+
+// 多项目构建
+include 'mainBundle'
+include 'recordBundle'
+include 'mainBundle:mainApp'

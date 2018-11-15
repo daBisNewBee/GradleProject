@@ -1,0 +1,134 @@
+/*
+* Gradle Gradle 命令行的基本使用
+*
+* 目录：
+* 1. 多任务调用
+* 2. 排除任务
+* 3. 失败后继续执行
+* 4. 简化任务名
+* 5. 选择构建位置
+* 6. 获取构建信息
+*
+* */
+
+
+/*
+* 1. 多任务调用
+*
+* 如：gradle compile test
+* a. 在命令行中一次调用多个任务。
+* b. 依次调用。如compile、test
+* c. 每个任务仅执行一次 （因此，gradle test test 与调用 gradle test 效果是相同的）
+*
+* */
+task compile << {
+    println "compiling source."
+}
+
+task compileTest(dependsOn: compile) << {
+    println "compiling unit test."
+}
+
+task test(dependsOn: [compile, compileTest]) << {
+    println "running unit test."
+}
+
+// TODO:更改任务报告内容
+//dists {
+//    description = 'Builds the distribution'
+//    group = 'build'
+//}
+
+task dist(dependsOn: [compile, test]) << {
+    println "building the distribution"
+}
+
+/*
+2. 排除任务
+
+如下，执行dist时排除test任务，即使test是 dist 任务的依赖
+userdeMacBook-Pro:GradleProject user$ gradle dist -x test -q
+compiling source.
+building the distribution
+* */
+
+// 3. 失败后继续执行
+// 增加"--continue"
+
+//
+/*
+* 4. 简化任务名
+*
+* a. 只需输入前缀
+* gradle world  ----> gradle wo(前提：前缀唯一)
+*
+* b. 简化驼峰任务名
+* gradle compileTest ----> gradle cT(前提：任务以驼峰命名)
+*
+* */
+
+/*
+* 5. 选择构建位置
+*
+* a. 新增"-b"参数。执行位于"cmd.gradle"中的"test"任务
+*    gradle -q -b cmd.gradle test
+*
+* b. 新增"-p"参数。指定构建的目录
+*    gradle -q -p mainBundle/ main
+*    单、多项目表现不同：
+*    单项目：（推荐）
+*       只执行当前指定目录的build.gradle配置阶段
+*    多项目：
+*       其他项目的build.gradle的配置阶段也会执行
+*
+*    结果：
+*    userdeMacBook-Pro:GradleProject user$ gradle -q -p mainBundle/ main
+     settings.gradle ------- start
+     这里将执行在[初始化阶段(Initialization)].....
+     settings.gradle ------- end
+     当前的构建文件名称：'build.gradle'. 位于目录：'mainBundle' [配置阶段]
+     This is main.
+* */
+
+/*
+* 6. 获取构建信息
+*
+* 列出子项目名称列表:
+* gradle -q projects:
+* Root project 'GradleProject'
+  +--- Project ':mainBundle'
+  |    \--- Project ':mainBundle:mainApp'
+  \--- Project ':recordBundle'
+*
+* 打印根项目所有任务列表：
+* gradle -q tasks --all
+*
+* 打印子项目"mainBundle"的任务列表：
+* gradle -q :mainBundle:tasks --all
+*
+* 获取任务帮助信息：
+* gradle help --task someTask
+*
+* TODO:以下未验证
+* 获取依赖列表:
+* gradle -q dependencies
+* gradle -q dependencies api:dependencies webapp:dependencies
+*
+* 过滤依赖信息：
+* gradle -q api:dependencies --configuration testCompile
+*
+* 查看特定依赖：
+* Running gradle dependencyInsight
+* gradle -q webapp:dependencyInsight --dependency groovy --configuration compile
+*
+* 获取项目属性列表:
+* gradle -q properties
+* gradle -q api:properties
+*
+* 构建日志:
+* gradle -q dist --profile // 将执行"dist"任务的详细信息（耗时等）记录到build/下的profile***.html
+*
+* TODO:不明白作用
+* Dry Run:不实际执行，用于知道某个任务的结果
+* gradle -m clean compile
+* */

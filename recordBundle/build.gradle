@@ -1,0 +1,1 @@
+println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$buildFile.parentFile.name' [配置阶段]"

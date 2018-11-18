@@ -287,4 +287,20 @@ We build the zip with version=1.0
 *
 * */
 
+// 13. 配置任意对象
+// gradle -q configure --recompile-scripts(舍弃缓存后的编译脚本，强制重新编译)
+task configure << {
+    def pos = configure(new java.text.FieldPosition(10)){
+        beginIndex = 1
+        endIndex = 5
+    }
+
+  // TODO：使用别的脚本配置配置对象。失败
+//  def pos = new java.text.FieldPosition(10)
+//  apply from:'cmd.gradle', to : pos
+
+  println "pos.beginIndex:" + pos.beginIndex
+  println "pos.endIndex:" + pos.endIndex
+}
+
 println 'Root Project build.gradle ---------- end.'

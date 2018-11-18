@@ -11,6 +11,16 @@
 *
 * */
 
+/*
+*
+* "正在 configuring root project 'GradleProject'"
+* 当前脚本作为"外部构建脚本"被主项目build.gradle 引用
+* */
+println "正在 configuring $project"
+
+// 供外部脚本调用
+def beginIndex = 1;
+def endIndex = 5;
 
 /*
 * 1. 多任务调用

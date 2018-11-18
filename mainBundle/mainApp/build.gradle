@@ -2,3 +2,59 @@ println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$build
 
 // 为项目添加描述信息.
 description = 'The shared API for the application'
+
+/*
+* Gradle 属性和系统属性的设置的几种方式：
+* 系统属性：
+*   1. 命令行参数，-D:
+*       -Dorg.gradle.project.* = xxxx
+*   2. 配置文件，
+*       项目目录下的"gradle.properties"
+*   3. 环境变量，
+*       前缀"ORG_GRADLE_PROJECT_*"
+*
+* 项目属性：
+*   -P:
+*       e.g. -Pmyprop=myvalue
+*   gradle.properties:
+*       用户主目录下的；
+*
+*
+* gradle -q -PcommandLineProjectProp=commandLineProjectPropValue -Dorg.gradle.project.systemProjectProp=systemProjectPropValue getPropertyE
+* */
+task getProperty << {
+    // 用户主目录中的属性文件("/Users/user/.gradle/gradle.properties")优先级最高！即使与当前配置中属性冲突，也无法覆盖
+    println "getProperty userGlobalPro:" + userGlobalPro
+
+    // 这里是项目根目录(rootProject/gradle.properties)中的属性值
+    println "getProperty rootPro:" + rootPro
+
+    // 这里是子项目中中配置文件中的属性值
+    println "getProperty mainAppPro:" + mainAppPro
+
+    // -Pxxx=yyy
+    println commandLineProjectProp
+
+    // 在配置中定义，被-Dxxx覆盖
+    println systemProjectProp
+
+    // 在配置中定义，被export xxx=yyy覆盖
+    println envProjectProp
+    println "$envProjectProp" // 与上述不同的表达方式
+
+    // 多项目构建时，只会读取根目录中定义的"systemProp."前缀值，忽略子项目中的定义（即使也定义）
+    println System.properties['system']
+
+    // 获取属性之前先判断，否则会引发异常，构建失败
+    if (project.hasProperty('envProjectProp')){
+        println "找到属性envProjectProp"
+    }else{
+        println "没有找到属性envProjectProp！"
+    }
+
+    if (project.hasProperty('notExistProperty')){
+        println "找到属性notExistProperty"
+    }else {
+        println "没有找到属性notExistProperty"
+    }
+}

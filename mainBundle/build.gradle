@@ -1,5 +1,78 @@
 println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$buildFile.parentFile.name' [配置阶段]"
 
-task main << {
+apply plugin: 'java'
+
+/*
+* 一个项目可以采用多个库。Gradle 会按照顺序从各个库里寻找所需的依赖文件，并且一旦找到第一个便停止搜索。
+*
+* Gradle 可以支持不同的仓库存储格式:
+*   1. Maven
+*   2. Ivy
+* */
+repositories{
+    // 使用 Maven 中央仓库
+    mavenCentral()
+    // 使用 Maven 远程仓库
+    maven {
+        url "http://repo.mycompany.com/maven2"
+    }
+    // 采用 Ivy 远程仓库
+    ivy {
+        url "http://repo.mycompany.com/repo"
+    }
+    // 采用本地 Ivy 目录
+    ivy {
+        url "../local-repo"
+    }
+}
+
+dependencies{
+    println "this is into dependencies."
+    compile group: 'org.jooq', name: 'joor-java-8', version: '0.9.7'
+    compile 'org.jooq:joor-java-8:0.9.0.9.7'
+}
+
+/*
+* 发布：
+* gradle uploadArchives:
+* Gradle 便会构建并上传你的 jar 包，同时会生成一个 ivy.xml 一起上传到目标仓库。
+* p.s：发布到 Maven 仓库你需要 Maven 插件的支持，当然，Gradle 也会同时产生 pom.xml 一起上传到目标仓库。
+* */
+apply plugin: 'maven'
+
+uploadArchives{
+    repositories{
+        // 1. 发布到 Ivy 仓库
+        ivy{
+            credentials{
+                username "myName"
+                password "pw"
+            }
+            url "http://repo.mycompany.com"
+        }
+        // 2. 发布到 Maven 仓库
+        mavenDeployer {
+            repository(url: "../local-repo")
+        }
+    }
+}
+
+/*
+* 创建目录.
+* 比如：任务main以来目录"build/classes"
+* */
+File classesDir = new File('build/classes')
+
+task resources << {
+    classesDir.mkdirs()
+    // do sth.
+}
+
+task main(dependsOn: 'resources') << {
+    if (classesDir.isDirectory()){
+        println "The class directory exists. I can operate"
+    }else{
+        println "No class directory found!"
+    }
     println "This is main.  "
 }

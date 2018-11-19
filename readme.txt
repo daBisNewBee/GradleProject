@@ -50,4 +50,9 @@ Project对象:
     重要：
         所谓的我们编写Gradle脚本，实质大多数时候都是在编写构建脚本Build script，所以说Project和Script对象的属性和方法等API非常重要。
 
+3. 几种重要元素对应的API映射：
+    Project:
+        org.gradle.api.project
+    Task:
+        org.gradle.api.task
 

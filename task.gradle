@@ -1,0 +1,194 @@
+// 深入了解Tasks
+
+/*
+* 1. 定义Task(三种方式)
+* 普通：
+*   task(hello)
+* String：
+*   task('hello')
+* Create:
+*   tasks.create(name: 'hello')
+*
+* */
+//task(hello) << {
+//task('hello') << {
+tasks.create(name: 'hello'){
+    println "hello"
+}
+
+/*
+* 解读：
+*  task 的名字是 “myCopy”, 但是它是 “Copy” 类(type).
+*  可以有许多同样 type 但是不同名字的 tasks
+* */
+//task(copy, type:Copy){
+//task('copy', type:Copy){
+tasks.create(name: 'copy', type: Copy){
+//    println "srcDir" + "$srcDir"
+    println "buildDir" + "$buildDir"
+    from(file('srcDir'))
+    into(buildDir)
+}
+
+/*
+* 2. 定位 tasks
+* */
+// 通过属性获取 tasks
+println "hello.name:" + hello.name
+println "project.hello.name:" + project.hello.name
+
+// 通过 tasks collection 获取 tasks
+println "容器1：" + tasks.hello.name
+println "容器2：" + tasks['hello'].name
+
+// TODO: 通过路径获取 tasks
+//project($project){
+//    task hello
+//}
+
+println "getByPath: " + tasks.getByPath('hello').path
+println "getByPath: " + tasks.getByPath(':hello').path
+//println "getByPath: " + tasks.getByPath('projectA:hello').path
+//println "getByPath: " + tasks.getByPath(':projectA:hello').path
+
+/*
+* 3. 配置 tasks
+* */
+// 不推荐如下方式配置"myCopy"，会重复调用上下文"myCopy"
+//Copy myCopy  = task(myCopy, type: Copy)
+//myCopy.from 'antLoadfileReseources'
+//myCopy.into 'target'
+//myCopy.include('**/*.txt','**/*.properties')
+
+// 通过"闭包 closure" 来配置一个任务
+task copyTxt(type: Copy)
+
+copyTxt {
+    /*
+    * TODO:
+    * 执行任意命令会打印该语句（表示运行在"配置阶段"），但是不执行实际copy操作？
+    * 实际copy操作在指定task时，才会执行？
+    * 如：
+    *   gradle -q -b task.gradle copyProp
+    * */
+    println "into Closure task copyTxt..."
+    from 'antLoadfileResources'
+    into 'target'
+    include('*.txt')
+//    include('*.txt', '*.properties')
+}
+
+// 在定义的时候使用闭包
+task copyProp(type: Copy) {
+    println "into Closure task copyProp..."
+    from 'antLoadfileResources'
+    into 'target'
+    include('*.properties')
+//    include('*.txt', '*.properties')
+}
+// "一个任务有配置和动作. 当使用 << 时, 你只是简单的使用捷径定义了动作. 定义在配置区域的代码只会在构建的配置阶段执行, 而且不论执行哪个任务"
+
+/*
+* 4. 给 task 加入依赖
+* */
+/*
+TODO： 未验证，跨项目的任务依赖
+project('projectA') {
+    task taskX(dependsOn: ':projectB:taskY') << {
+        println 'taskX'
+    }
+}
+
+project('projectB') {
+    task taskY << {
+        println 'taskY'
+    }
+}
+*/
+/*
+* 通过闭包加入依赖:
+* gradle -q -b task.gradle taskX
+*  lib1.
+   lib2.
+   taskX
+* */
+project
+task taskX << {
+    // 给任务加入描述
+    description 'This task taskX`s description.'
+
+    println 'taskX'
+}
+
+taskX.dependsOn {
+    // 更加先进的用法, 你可以通过闭包定义一个任务依赖. 闭包只能返回一个单独的 Task
+    // 或者 Task 对象的 collection, 这些返回的任务就将被当做依赖
+    tasks.findAll {
+        // TODO: 神马意思？ 为什么这样就能返回task集合？ "" -> ""
+        task -> task.name.startsWith("lib")
+    }
+}
+
+task lib1 << {
+    println "lib1."
+}
+
+task lib2 << {
+    println "lib2."
+}
+
+task notAlib << {
+    println "notAlib."
+}
+
+/*
+* 5. 给 tasks 排序
+* */
+// B must run after A: B必须在A后执行
+lib2.mustRunAfter lib1
+
+// B should run after A: B应当在A后执行（不然"must"严格，在某些情况下可以忽略）
+taskX.shouldRunAfter notAlib
+
+/*
+* 几个注意点：
+* 1. 排序规则只有在两个任务同时执行时才会被应用：
+*   gradle -q -b task.gradle lib2 lib1
+* 2. lib1、lib2仍能单独运行，不影响
+* 3. 加上"--continue"，lib1失败后，lib2仍能运行
+* */
+
+// "shouldRunAfter"规则在一个执行循环中将被忽略
+task taskY << {
+    println "taskY."
+}
+
+task taskZ << {
+    println "taskZ."
+}
+
+taskX.dependsOn taskY
+taskY.dependsOn taskZ
+/*
+* 注意：下列语句失效！
+* gradle -q -b task.gradle taskX
+* 仍旧输出：
+*   taskZ.
+    taskY.
+    taskX.
+* */
+taskZ.shouldRunAfter taskX
+
+/*
+* 6. 替换 tasks
+*
+* gradle -q -b task.gradle shouldBeOveride
+* */
+task shouldBeOveride << {
+    println "orginal task."
+}
+
+// 定义为false，或者不定义overwrite，会报错："Cannot add task ':shouldBeOveride' as a task with that name already exists."
+task shouldBeOveride(overwrite: true) << {
+    println "new task."
+}

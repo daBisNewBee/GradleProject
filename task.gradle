@@ -192,3 +192,127 @@ task shouldBeOveride << {
 task shouldBeOveride(overwrite: true) << {
     println "new task."
 }
+
+/*
+* 7. 跳过 tasks
+* */
+/*
+*
+* 使用判断条件跳过一个任务：
+* 使用 onlyIf() 方法来为一个任务加入判断条件（类似Java里的If）
+*
+* > gradle hello -PskipHello
+*  则taskZ不被执行
+* */
+taskZ.onlyIf {
+    !project.hasProperty('skipTaskZ')
+}// 注意此时闭包的作用：像变量一样传递任务，来实现判断条件。若任务应当被执行，则返回真；反之亦然。
+
+/*
+* 通过 StopExecutionException 跳过任务：
+* 十分有用：在直接使用Gradle提供的任务时，它允许你为"内建的任务"加入条件来控制执行.
+*
+* gradle -q -b task.gradle myTask：
+*   I am not affected
+    before throw Exception.
+* */
+taskZ.doFirst{
+    if (true){
+        println "before throw Exception."
+        // 这个动作之后的执行以及所有紧跟它的动作都会被跳过. 构建将会继续执行下一个任务.
+        throw new StopExecutionException()
+        println "after throw Exception."
+    }
+}
+
+task myTask(dependsOn: 'taskZ'){
+    println 'I am not affected'
+}
+
+// 激活和注销 tasks
+task disableMe << {
+    println 'This should not be printed if the task is disabled.'
+}
+
+// 激活标记。默认为真；若激活为假，则任何动作都不被执行
+disableMe.enabled = false
+
+/*
+* 8. 跳过 up-to-date 的任务
+*  代表这个任务已经运行过了或者说是最新的状态, 不再需要产生一次相同的输出
+*
+* 第一次：
+*  > gradle transform
+:transform
+ Transforming source file.
+*
+* 第二次：
+* > gradle transform
+:transform UP-TO-DATE
+* */
+// TODO: 未验证
+task transform {
+    ext.srcFile = file('mountains.xml')
+    ext.destDir = new File(buildDir, 'generated')
+    // 为了使用 Gradle 的 up-to-date 检测, 你需要定义任务的输入.
+    inputs.file srcFile
+    // 为了使用 Gradle 的 up-to-date 检测, 你需要定义任务的输出.
+    outputs.dir destDir
+    doLast {
+        println "Transforming source file."
+        destDir.mkdirs()
+        def mountains = new XmlParser().parse(srcFile)
+        mountains.mountain.each { mountain ->
+            def name = mountain.name[0].text()
+            def height = mountain.height[0].text()
+            def destFile = new File(destDir, "${name}.txt")
+            destFile.text = "$name -> ${height}\n"
+        }
+    }
+}
+
+/*
+* 9. Task 规则
+* */
+// 任务规则。比如，打印"ping"开头的任务
+tasks.addRule("Pattern: ping<ID>"){ String taskName ->
+    if (taskName.startsWith("ping")){
+        task(taskName) << {
+            println "Pinging: " + (taskName - 'ping')
+        }
+    }
+}
+
+/*
+* 基于规则的任务依赖：
+*
+* 不能找到"pingServer1"、"pingServer2"的任务，但是这个脚本仍然会执行这些任务！
+*
+* gradle  -q -b task.gradle groupPing
+*   Pinging: Server1
+    Pinging: Server2
+* */
+task groupPing {
+    dependsOn pingServer1, pingServer2
+}
+
+/*
+* 10. 终止 tasks
+*
+* 注意点：
+* 1. 如果要终止的任务并没有被执行 (比如上一节讲的 up-to-date) 那么终止任务并不会执行.
+*   即：M 没有被执行，那么N也不会执行
+* 2. 当构建创建了一个资源, 无论构建失败或成功时这个资源必须被清除的时候, 终止任务就非常有用.
+* */
+task taskM << {
+    println "taskM."
+    throw new StopExecutionException() // TODO:RuntimeException会失败。但教程并不会
+    println "taskM end."
+}
+
+task taskN << {
+    println "taskN."
+}
+
+// 表示"即使任务M失败了，终止任务N也会执行"
+taskM.finalizedBy taskN // 这里的，"终止任务"的终止是形容词，不是动词！

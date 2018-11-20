@@ -1,1 +1,60 @@
 println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$buildFile.parentFile.name' [配置阶段]"
+
+/*
+* Gradle之重新认识Gradle(项目结构、命令行、task、构建Java项目、包装器):
+* https://blog.csdn.net/weixin_38062353/article/details/82230239
+*
+* gradle可以以守护进程开启:
+* gradle helloWorld –daemon，启动后，gradle会在后续的构建中重用之前创建的守护进程，避免启动时造成开销。
+*
+* 构建Java项目:
+* apply plugin:'java' // 使用Java构建Java代码
+*
+* UP-TO-DATE：
+* 意味着任务被跳过，Gradle增量式构建支持自动鉴别不需要被运行的任务
+*
+* 如何查找依赖？
+*   可以在Maven Central中查找依赖的详细信息。http://search.maven.org/ 上面，仓库提供了一个简单的搜索入口。
+*   // 配置对maven仓库的依赖，下载依赖源码的中心仓库
+    repositories {
+        mavenCentral()
+    }
+      // 添加要依赖的库，现在一般使用implementation(compile被废弃)
+    dependencies {
+        compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.1'
+    }
+*
+* Gradle包装器:
+* 1. 能够让没有安装Gradle运行环境的机器运行Gradle构建
+* 2. 可以让构建脚本运行在指定版本的Gradle上，它是通过自动从中心仓库下载Gradle
+* 3. 最终创建一个独立于系统和Gradle版本的可靠的和可重复的构建。
+*
+*/
+
+/**创建一个包装器任务，通过改变gradleVersion的值和重新运行该任务可以升级包装器的版本*/
+/*
+*
+* gradle recordBundle:wrapper
+*
+* 运行结果：
+*   recordBundle/
+├── build.gradle
+├── gradle
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradlew
+└── gradlew.bat
+*
+* 运行gradle版本独立性的验证：
+* userdeMacBook-Pro:recordBundle user$ ./gradlew -v
+    Gradle 4.4
+*
+* 而根目录的gradle版本仍旧为：
+* userdeMacBook-Pro:GradleProject user$ gradle -v
+    Gradle 4.1
+* */
+task wrapper(type: Wrapper){
+    println "into wrapper."
+    gradleVersion = '4.4'
+}

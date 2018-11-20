@@ -96,6 +96,10 @@ task taskY << {
 }
 
 // 5. 动态任务
+/**这是一个动态的task，可以在运行的时候指定它的名字。
+ * 该方法是Groovy在java.lang.Number中扩展的times方法，
+ * 创建10个新的task，隐含变量it(counter)指定循环的次数，这里使用计数器来创建task的名字.
+ * */
 10.times { counter ->
   task "task$counter" << {
     println "I`m task number $counter"

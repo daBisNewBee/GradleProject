@@ -4,8 +4,15 @@ println "当前的构建文件名称：'$buildFile.name'. 位于目录：'$build
 * Gradle之重新认识Gradle(项目结构、命令行、task、构建Java项目、包装器):
 * https://blog.csdn.net/weixin_38062353/article/details/82230239
 *
-* gradle可以以守护进程开启:
-* gradle helloWorld –daemon，启动后，gradle会在后续的构建中重用之前创建的守护进程，避免启动时造成开销。
+* 守护进程：
+* 开启：（默认开启）
+*   gradle helloWorld –daemon，启动后，gradle会在后续的构建中重用之前创建的守护进程，避免启动时造成开销。
+*   (--no-daemon: 构建阻止使用守护进程)
+*   其他开启的几个方法：
+*   -Dorg.gradle.daemon=true
+*   org.gradle.daemon=true（<<GRADLE_USER_HOME>>/gradle.properties）
+* 停止：（闲置3小时后自动终止）
+*   gradle --stop
 *
 * 构建Java项目:
 * apply plugin:'java' // 使用Java构建Java代码

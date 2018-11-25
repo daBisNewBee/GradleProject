@@ -1,0 +1,153 @@
+/*
+* 1. 定位文件
+* */
+task filePath << {
+    // 推荐：使用一个相对路径。（file会自动添加项目路径前缀）
+    File configFile = file('antLoadfileResources/default.properties')
+
+    println "absolutePath:" + configFile.absolutePath
+
+    // 使用一个绝对路径
+    configFile = file(configFile.absolutePath)
+
+    // 使用一个项目路径的文件对象
+    configFile = file(new File('antLoadfileResources/default.properties'))
+}
+
+/*
+* 2. 文件集合
+* */
+task collect << {
+    FileCollection collection  = files('antLoadfileResources/1.txt',
+                                        new File('antLoadfileResources/2.txt'),
+                                        ['antLoadfileResources/app.xml','antLoadfileResources/default.properties'])
+    // 对文件集合进行迭代
+    collection.each {File file ->
+        println file.name
+    }
+
+    // 转换文件集合为其他类型
+    Set set = collection.files
+    Set set2 = collection as Set
+    List list = collection as List
+    String path = collection.asPath
+//    File file = collection.singleFile
+//    file file2 = collection as File
+
+    // 增加文件集合
+    def union = collection + files('readme.txt')
+    Set set3 = union as Set
+    set3.each {File one ->
+//        println one.name
+    }
+
+    // 减少文件集合
+    def different = collection - files('readme.txt')
+    List list2 = different as List
+    list2.each {File one2 ->
+//        println one2.name
+    }
+
+    println "实现一个文件集合:"
+    File resDir = file('antLoadfileResources')
+    collection = files{ resDir.listFiles() }
+    collection.each {
+        File one3 ->
+            println one3.name
+    }
+    println "Contents of $resDir.name"
+    // TODO: it什么意思？改成其他的会出错，为什么？比如改成itt
+    collection.collect{ relativePath(it) }.sort().each{ println it }
+
+}
+
+/*
+* 3. 文件树
+* */
+task fileTree << {
+    // 以一个基准目录创建一个文件树
+    FileTree tree = fileTree(dir: 'antLoadfileResources')
+    // 添加包含和排除规则
+    tree.include '*.txt'
+    tree.exclude '1.txt'
+    tree.each {File file ->
+        println file
+    }
+
+    println "使用路径创建一个树:"
+    tree = fileTree(dir: projectDir).include('*.gradle')
+    // 遍历文件树
+    tree.each {File file ->
+        println file
+    }
+
+    println "使用闭合创建一个数:"
+    tree = fileTree('antLoadfileResources'){
+        include '*.xml'
+    }
+    tree.each {File file ->
+        println file
+    }
+
+    println "使用map创建一个树:"
+    tree = fileTree(dir: 'antLoadfileResources', include:'*.txt', exclude: '1.txt')
+    tree = fileTree(dir: 'antLoadfileResources', includes: ['*.txt', '*.xml'])
+    FileTree filtered = tree.matching{
+        include '*.xml'
+    }
+    filtered.each {File file ->
+        println file
+    }
+
+    println "过滤后拼接的FileTree："
+    FileTree sum = filtered + fileTree('mainBundle'){
+        include '*.gradle'
+    }
+    sum.each {File file ->
+        println file
+    }
+    println "访问文件数的元素 visit:"
+    sum.visit {element ->
+        println "$element.relativePath -> $element.file"
+    }
+}
+
+/*
+* 4. 使用一个归档文件的内容作为文件树
+* */
+task zipTree << {
+    /*
+     * 压缩：
+     * userdeMacBook-Pro:antLoadfileResources user$ zip -r myZip.zip ./
+     *
+     * 验证：
+     * userdeMacBook-Pro:GradleProject user$ gradle -q -b file.gradle zipTree
+     * */
+    println "获取zip的文档内容："
+    FileTree zip = zipTree('antLoadfileResources/myZip.zip')
+    zip.each {File file ->
+        println file
+    }
+
+    /*
+     * 仅打包，不压缩：
+     * tar cvf myTar.tar ./
+     * */
+    println "获取tar的文档内容："
+    FileTree tar = tarTree('antLoadfileResources/myTar.tar')
+    tar.each { File file ->
+        println file
+    }
+
+    /*
+    * 打包后，以gzip方式压缩：
+    * tar zcvf myGzipTar.tar ./
+    *
+    * tar tree 能够根据文件扩展名得到压缩方式,如果你想明确的指定压缩方式,你可以使用下面方法
+    * */
+    println "已指定的gzip压缩方式获取filetree："
+    FileTree gzipTar = tarTree(resources.gzip('antLoadfileResources/myGzipTar.tar'))
+    gzipTar.each { File file ->
+        println file
+    }
+}

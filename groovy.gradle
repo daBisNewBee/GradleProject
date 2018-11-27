@@ -1,4 +1,9 @@
 /*
+*
+* Apache Groovy 官方：
+* http://www.groovy-lang.org/closures.html
+*
+*
 * 1. 定义一个闭包
 *
 * { [closureParameters -> ] statements }

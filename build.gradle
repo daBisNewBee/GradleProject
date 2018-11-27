@@ -12,6 +12,9 @@
 *   "Gradle构建基础"
 *   参考：https://www.w3cschool.cn/gradle/ms7n1hu2.html （Gradle教程）
 *
+*   Gradle User Guide 中文版:
+*   https://dongchuan.gitbooks.io/gradle-user-guide-/content/
+*
 * 目录：
 * 1. 定义一个任务
 * 2. 代码即脚本

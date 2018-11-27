@@ -18,10 +18,6 @@
 * */
 println "正在 configuring $project"
 
-// 供外部脚本调用
-def beginIndex = 1;
-def endIndex = 5;
-
 /*
 * 1. 多任务调用
 *
@@ -43,14 +39,23 @@ task test(dependsOn: [compile, compileTest]) << {
     println "running unit test."
 }
 
-// TODO:更改任务报告内容
-//dists {
-//    description = 'Builds the distribution'
-//    group = 'build'
-//}
-
-task dist(dependsOn: [compile, test]) << {
-    println "building the distribution"
+task dist(dependsOn: [compile, test]) {
+    /*
+    * 更改任务报告内容(修改任务的描述等信息)
+    *
+    * 可以用：
+    * gradle -q tasks --all
+    * 进行确认：
+    * MyGroup tasks
+      -------------------
+      dist - this is Builds the distribution
+    *
+    * */
+    description = 'this is Builds the distribution'
+    group = 'MyGroup'
+    doLast {
+        println "building the distribution..." + " description: " + description + ". group: " + group
+    }
 }
 
 /*

@@ -56,8 +56,7 @@ task collect << {
             println one3.name
     }
     println "Contents of $resDir.name"
-    // TODO: it什么意思？改成其他的会出错，为什么？比如改成itt
-    collection.collect{ relativePath(it) }.sort().each{ println it }
+    collection.collect{ relativePath(it) }.sort().each{ one -> println one }
 
 }
 

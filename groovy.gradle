@@ -1,0 +1,127 @@
+/*
+* 1. 定义一个闭包
+*
+* { [closureParameters -> ] statements }
+*
+* closureParameters: 可选
+*
+* "->"：分离参数和闭包，当有参数时
+* */
+
+task withParam << {
+    // 闭包携带参数.
+    it -> println "With params is " + it
+}
+
+task noParam << {
+    // 当闭包没有显式声明参数时，其默认包含一个隐式的参数it
+    println "No params is " + it
+}
+
+/*
+* 2.闭包也是对象
+*
+* 闭包在groovy中是groovy.lang.Closure类的实例，这使得闭包可以赋值给变量或字段
+*
+* */
+task closureIsInstance << {
+    def listener = {e -> println "Clicked on $e.source"}
+    assert listener instanceof Closure
+
+    Closure callback = {println 'Done!'}
+    Closure<Boolean> isTextFile = {
+        File file -> file.name.endsWith(".txt")
+    }
+}
+
+/*
+* 3. 闭包的调用
+*
+* 两种方式
+* */
+task callClosureHowTo << {
+    def code = { 123 }
+
+    // 1. xxx()
+    assert code() == 123
+
+    // 2. xxx.call()
+    assert code.call() == 123
+
+//    def params = { int x, int y -> println "x: " + ${x} + " y: " + ${y} }
+//    params.call(1,100)
+    // 带参数，隐式的参数it
+    def greeting = { "Hello, $it!" }
+    assert greeting('Salmon') == "Hello, Salmon!"
+    assert greeting.call('Salmon') == "Hello, Salmon!"
+}
+
+
+class OuterClass{
+
+    class InnerClass{
+
+        def outerClosure = {
+
+            def innerClosure = {
+            }
+
+            /*
+            *   分析：
+            *    this:
+            *        跟Java一样，定义闭包的封装类
+            *    owner:（指向的范围比"this"大些）
+            *        封装对象，this或者环绕闭包，即可能取值是 "闭包"、"类"
+            *    delegate:
+            *        默认同owner，可以自己设置
+            *
+            *   结果：
+            *   innerClosure this: OuterClass$InnerClass@3928632e
+                innerClosure owner: OuterClass$InnerClass$_closure1@e5088c6
+                innerClosure delegate: OuterClass$InnerClass$_closure1@e5088c6
+                ==================
+                outerClosure this: OuterClass$InnerClass@3928632e
+                outerClosure owner: OuterClass$InnerClass@3928632e
+                outerClosure delegate: OuterClass$InnerClass@3928632e
+                ==================
+                outerClosure toString OuterClass$InnerClass$_closure1@e5088c6
+            * */
+            printfMsg("innerClosure", innerClosure)
+            println "=================="
+            printfMsg("outerClosure", outerClosure)
+        }
+
+        void printfMsg(String flag, Closure closure){
+            def thisObject = closure.getThisObject()
+            def ownerObject = closure.getOwner()
+            def delegateObject = closure.getDelegate()
+
+            /*
+            * 几个等价调用：
+            * getThisObject() == this
+            * getOwner() == owner
+            * getDelegate() == delegate
+            * */
+            assert thisObject == this
+            assert ownerObject == closure.owner
+            assert delegateObject == closure.delegate
+
+            println "${flag} this: ${thisObject.toString()}"
+            println "${flag} owner: ${ownerObject.toString()}"
+            println "${flag} delegate: ${delegateObject.toString()}"
+        }
+    }
+
+    def callInnerMethod(){
+        def innerClass = new InnerClass()
+        innerClass.outerClosure.call()
+        println "=================="
+        println "outerClosure toString ${innerClass.outerClosure.toString()}"
+    }
+}
+
+// this、owner、delegate的区别和用法
+task keyWord << {
+    OuterClass outerClass = new OuterClass()
+    outerClass.callInnerMethod()
+}

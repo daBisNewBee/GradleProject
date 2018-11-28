@@ -1,3 +1,12 @@
+/*
+* idea 无法配置Groovy SDK，报错 "groovy sdk is not configured for module" ?
+*
+* 需要Create的路径为：
+*   "/usr/local/Cellar/groovy/2.5.4/libexec"
+*
+*  若无法在Finder中寻找上述文件，可以通过软链接或者标签等。
+* */
+
 class Main {
 
     // person中也定义了该方法，演示冲突
